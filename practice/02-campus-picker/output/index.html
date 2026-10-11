@@ -1,0 +1,209 @@
+
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>教學模擬活動選擇器</title>
+<style>
+:root{font-family:system-ui,-apple-system,"Segoe UI",sans-serif;color:#20312b;background:#f5f2ea}
+*{box-sizing:border-box}
+body{margin:0;padding:24px 16px}
+main{max-width:760px;margin:auto}
+header,.panel,.result,.history{background:#fff;border:1px solid #ddd8cc;border-radius:16px;padding:20px;margin-bottom:16px}
+header{background:#20312b;color:white}
+h1{font-size:1.7rem;margin:0 0 8px}
+h2{font-size:1.15rem;margin:0 0 14px}
+p{line-height:1.6}
+.tag{display:inline-block;border:1px solid #a9b8ae;border-radius:99px;padding:4px 10px;font-size:.85rem}
+.controls{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
+label{display:block;font-weight:650;margin-bottom:6px}
+select,button{font:inherit;border-radius:9px;padding:10px;width:100%;border:1px solid #b8c2bb;background:white;color:#20312b}
+button{cursor:pointer;font-weight:650}
+.primary{background:#c9552d;color:white;border-color:#c9552d}
+.actions{display:flex;gap:10px;margin-top:16px}
+.actions button{flex:1}
+.result{border-left:5px solid #c9552d}
+.activity-id{font-size:.9rem;color:#64746b}
+.activity-name{font-size:1.4rem;font-weight:750;margin:8px 0}
+.details{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+.notice{padding:12px;border-radius:10px;background:#f8eee7;line-height:1.6}
+.history ol{padding-left:24px}
+.history li{padding:8px 0;border-bottom:1px solid #eee8dc}
+.small{font-size:.9rem;color:#66736c}
+footer{text-align:center;font-size:.85rem;color:#66736c;padding:8px}
+@media(max-width:560px){body{padding:14px 10px}.controls{grid-template-columns:1fr}.actions{flex-direction:column}header,.panel,.result,.history{padding:16px}h1{font-size:1.4rem}}
+</style>
+</head>
+<body>
+<main>
+<header>
+  <span class="tag" id="simulationTag">教學模擬</span>
+  <h1 id="pageTitle">問問我想做什麼？</h1>
+  <p id="intro">選擇地點、時間與活動強度，找一個符合條件的小活動。</p>
+  <button id="languageButton" type="button">English</button>
+</header>
+
+<section class="panel">
+  <h2 id="filterTitle">活動條件</h2>
+  <div class="controls">
+    <div>
+      <label for="location" id="locationLabel">地點</label>
+      <select id="location">
+        <option value="all">不限</option>
+        <option value="indoor">室內</option>
+        <option value="outdoor">室外</option>
+      </select>
+    </div>
+    <div>
+      <label for="minutes" id="minutesLabel">可用時間</label>
+      <select id="minutes">
+        <option value="15">15 分鐘</option>
+        <option value="30">30 分鐘</option>
+        <option value="60" selected>60 分鐘</option>
+      </select>
+    </div>
+    <div>
+      <label for="energy" id="energyLabel">活動強度</label>
+      <select id="energy">
+        <option value="all">不限</option>
+        <option value="low">低</option>
+        <option value="medium">中</option>
+      </select>
+    </div>
+  </div>
+  <div class="actions">
+    <button class="primary" id="pickButton" type="button">幫我選</button>
+    <button id="resetButton" type="button">重設篩選</button>
+  </div>
+</section>
+
+<section class="result" aria-live="polite">
+  <h2 id="resultTitle">活動結果</h2>
+  <div id="resultArea"><p id="emptyPrompt">設定條件後，按「幫我選」開始抽選。</p></div>
+</section>
+
+<section class="history">
+  <h2 id="historyTitle">最近 5 次成功抽選</h2>
+  <p class="small" id="historyHelp">最新的紀錄會顯示在最前面。</p>
+  <ol id="historyList"><li id="noHistory">尚無抽選紀錄</li></ol>
+  <button id="clearButton" type="button">清除紀錄</button>
+</section>
+<footer id="footerText">教學模擬活動，並非校方公告。資料僅供練習。</footer>
+</main>
+
+<script>
+"use strict";
+const activities = [
+{id:"A01",name_zh:"整理書包",name_en:"Organize your bag",location_type:"indoor",minutes:10,energy:"low"},
+{id:"A02",name_zh:"畫一張小卡",name_en:"Draw a small card",location_type:"indoor",minutes:15,energy:"low"},
+{id:"A03",name_zh:"寫三句讀書筆記",name_en:"Write three study notes",location_type:"indoor",minutes:10,energy:"low"},
+{id:"A04",name_zh:"安靜讀兩頁書",name_en:"Read two pages quietly",location_type:"indoor",minutes:15,energy:"low"},
+{id:"A05",name_zh:"排好明日待辦",name_en:"Plan tomorrow's tasks",location_type:"indoor",minutes:20,energy:"low"},
+{id:"A06",name_zh:"整理本機練習檔",name_en:"Organize practice files",location_type:"indoor",minutes:30,energy:"medium"},
+{id:"A07",name_zh:"在合適位置慢走",name_en:"Take a gentle walk in a suitable area",location_type:"outdoor",minutes:15,energy:"low"},
+{id:"A08",name_zh:"觀察天空並畫草圖",name_en:"Observe the sky and sketch",location_type:"outdoor",minutes:20,energy:"low"},
+{id:"A09",name_zh:"在合適位置快走",name_en:"Take a brisk walk in a suitable area",location_type:"outdoor",minutes:30,energy:"medium"},
+{id:"A10",name_zh:"規劃小組練習",name_en:"Plan a group exercise",location_type:"indoor",minutes:45,energy:"medium"},
+{id:"A11",name_zh:"記錄自然色彩",name_en:"Record colors in nature",location_type:"outdoor",minutes:45,energy:"low"},
+{id:"A12",name_zh:"構思下一次社團活動",name_en:"Brainstorm a future club activity",location_type:"indoor",minutes:60,energy:"medium"}
+];
+let english = false;
+let history = [];
+let currentActivity = null;
+
+const $ = id => document.getElementById(id);
+const text = {
+zh:{
+simulationTag:"教學模擬",pageTitle:"問問我想做什麼？",intro:"選擇地點、時間與活動強度，找一個符合條件的小活動。",
+filterTitle:"活動條件",locationLabel:"地點",minutesLabel:"可用時間",energyLabel:"活動強度",
+pickButton:"幫我選",resetButton:"重設篩選",resultTitle:"活動結果",
+emptyPrompt:"設定條件後，按「幫我選」開始抽選。",
+historyTitle:"最近 5 次成功抽選",historyHelp:"最新的紀錄會顯示在最前面。",
+noHistory:"尚無抽選紀錄",clearButton:"清除紀錄",footerText:"教學模擬活動，並非校方公告。資料僅供練習。",
+all:"不限",indoor:"室內",outdoor:"室外",low:"低",medium:"中",
+minutes:"分鐘",id:"活動 ID",duration:"所需時間",place:"地點",intensity:"強度",
+noMatch:"沒有符合條件的活動。請調整篩選條件後再試。",languageButton:"English",
+resultHint:"本次抽選結果",emptyHistory:"尚無抽選紀錄"
+},
+en:{
+simulationTag:"SIMULATION",pageTitle:"What should I do?",intro:"Choose a location, time limit, and energy level to find a matching activity.",
+filterTitle:"Activity filters",locationLabel:"Location",minutesLabel:"Available time",energyLabel:"Energy level",
+pickButton:"Pick for me",resetButton:"Reset filters",resultTitle:"Activity result",
+emptyPrompt:"Set your filters, then select “Pick for me.”",
+historyTitle:"Last 5 successful picks",historyHelp:"The newest record appears first.",
+noHistory:"No picks yet",clearButton:"Clear history",footerText:"Teaching simulation, not an official university announcement. Practice data only.",
+all:"Any",indoor:"Indoor",outdoor:"Outdoor",low:"Low",medium:"Medium",
+minutes:"min",id:"Activity ID",duration:"Duration",place:"Location",intensity:"Intensity",
+noMatch:"No activities match these filters. Adjust your filters and try again.",
+languageButton:"中文",resultHint:"Your pick",emptyHistory:"No picks yet"
+}
+};
+
+function tr(key){return text[english?"en":"zh"][key];}
+function renderLanguage(){
+document.documentElement.lang=english?"en":"zh-Hant";
+["simulationTag","pageTitle","intro","filterTitle","locationLabel","minutesLabel","energyLabel","pickButton","resetButton","resultTitle","historyTitle","historyHelp","clearButton","footerText"].forEach(id=>$(id).textContent=tr(id));
+$("languageButton").textContent=tr("languageButton");
+const loc=$("location");
+[...loc.options].forEach(o=>o.textContent=tr(o.value));
+[...$("energy").options].forEach(o=>o.textContent=tr(o.value));
+[...$("minutes").options].forEach(o=>o.textContent=o.value+" "+tr("minutes"));
+if(currentActivity) renderActivity(currentActivity);
+else $("resultArea").innerHTML="<p>"+tr("emptyPrompt")+"</p>";
+renderHistory();
+}
+function matchesFilters(){
+const location=$("location").value;
+const maxMinutes=Number($("minutes").value);
+const energy=$("energy").value;
+return activities.filter(a=>(location==="all"||a.location_type===location)&&a.minutes<=maxMinutes&&(energy==="all"||a.energy===energy));
+}
+function renderActivity(a){
+const name=english?a.name_en:a.name_zh;
+$("resultArea").innerHTML="";
+const hint=document.createElement("p");
+hint.className="small";hint.textContent=tr("resultHint");
+const id=document.createElement("div");
+id.className="activity-id";id.textContent=tr("id")+": "+a.id;
+const title=document.createElement("div");
+title.className="activity-name";title.textContent=name;
+const details=document.createElement("div");
+details.className="details";
+[[tr("duration"),a.minutes+" "+tr("minutes")],[tr("place"),tr(a.location_type)],[tr("intensity"),tr(a.energy)]].forEach(([label,value])=>{
+const span=document.createElement("span");span.className="tag";span.textContent=label+": "+value;details.appendChild(span);
+});
+$("resultArea").append(hint,id,title,details);
+}
+function renderHistory(){
+const list=$("historyList");list.innerHTML="";
+if(history.length===0){const li=document.createElement("li");li.textContent=tr("emptyHistory");list.appendChild(li);return;}
+history.forEach(a=>{
+const li=document.createElement("li");
+li.textContent=a.id+" — "+(english?a.name_en:a.name_zh)+" ("+a.minutes+" "+tr("minutes")+")";
+list.appendChild(li);
+});
+}
+$("pickButton").addEventListener("click",()=>{
+const candidates=matchesFilters();
+if(candidates.length===0){
+currentActivity=null;
+$("resultArea").innerHTML="";
+const p=document.createElement("p");p.className="notice";p.textContent=tr("noMatch");$("resultArea").appendChild(p);
+return;
+}
+currentActivity=candidates[Math.floor(Math.random()*candidates.length)];
+history.unshift(currentActivity);
+history=history.slice(0,5);
+renderActivity(currentActivity);renderHistory();
+});
+$("resetButton").addEventListener("click",()=>{
+$("location").value="all";$("minutes").value="60";$("energy").value="all";
+currentActivity=null;$("resultArea").innerHTML="<p>"+tr("emptyPrompt")+"</p>";
+});
+$("clearButton").addEventListener("click",()=>{history=[];renderHistory();});
+$("languageButton").addEventListener("click",()=>{english=!english;renderLanguage();});
+renderLanguage();
+</script>
+</body>
+</html>

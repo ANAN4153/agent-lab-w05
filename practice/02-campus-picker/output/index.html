@@ -79,8 +79,9 @@ footer{text-align:center;font-size:.85rem;color:#66736c;padding:8px}
 </section>
 
 <section class="result" aria-live="polite">
-  <h2 id="resultTitle">活動結果</h2>
-  <div id="resultArea"><p id="emptyPrompt">設定條件後，按「幫我選」開始抽選。</p></div>
+ <h2 id="resultTitle">活動結果</h2>
+<p id="filterSummary" class="small">目前條件：不限地點、60 分鐘、強度不限</p>
+<div id="resultArea"><p id="emptyPrompt">設定條件後，按「幫我選」開始抽選。</p></div>
 </section>
 
 <section class="history">
@@ -141,6 +142,14 @@ languageButton:"中文",resultHint:"Your pick",emptyHistory:"No picks yet"
 };
 
 function tr(key){return text[english?"en":"zh"][key];}
+  function updateFilterSummary(){
+  const location = $("location").value;
+  const minutes = $("minutes").value;
+  const energy = $("energy").value;
+  const label = english ? "Current filters: " : "目前條件：";
+  $("filterSummary").textContent =
+    label + tr(location) + "、" + minutes + " " + tr("minutes") + "、" + tr(energy);
+}
 function renderLanguage(){
 document.documentElement.lang=english?"en":"zh-Hant";
 ["simulationTag","pageTitle","intro","filterTitle","locationLabel","minutesLabel","energyLabel","pickButton","resetButton","resultTitle","historyTitle","historyHelp","clearButton","footerText"].forEach(id=>$(id).textContent=tr(id));
@@ -152,6 +161,7 @@ const loc=$("location");
 if(currentActivity) renderActivity(currentActivity);
 else $("resultArea").innerHTML="<p>"+tr("emptyPrompt")+"</p>";
 renderHistory();
+    updateFilterSummary();
 }
 function matchesFilters(){
 const location=$("location").value;
@@ -204,6 +214,9 @@ currentActivity=null;$("resultArea").innerHTML="<p>"+tr("emptyPrompt")+"</p>";
 $("clearButton").addEventListener("click",()=>{history=[];renderHistory();});
 $("languageButton").addEventListener("click",()=>{english=!english;renderLanguage();});
 renderLanguage();
+  ["location","minutes","energy"].forEach(id => {
+  $(id).addEventListener("change", updateFilterSummary);
+});  
 </script>
 </body>
 </html>
